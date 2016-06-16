@@ -11,6 +11,7 @@
 #include <candriver.h>
 #include <led.h>
 #include "canmsgbuffer.h"
+#include "obdprofile.h"
 #include "isocan.h"
 #include "canhistory.h"
 
@@ -186,9 +187,16 @@ int IsoCanAdapter::onConnectEcu(bool sendReply)
     CanMsgBuffer msgBuffer(getID(), extended_, 8, 0x02, 0x01, 0x00);
 
     open();
-    
-    // Message log
-    history_->add2Buffer(&msgBuffer, true, 0);
+
+    switch (OBDProfile::instance()->getProtocol()) {
+    	case PROT_ISO15765_1150:
+    		connected_ = true;
+    		return PROT_ISO15765_1150;
+    	case PROT_ISO15765_2950:
+    		connected_ = true;
+    		return PROT_ISO15765_2950;
+
+    }
 
     if (driver_->send(&msgBuffer)) { 
         if (receiveFromEcu(sendReply)) {
@@ -197,7 +205,6 @@ int IsoCanAdapter::onConnectEcu(bool sendReply)
         }
     }
     close(); // Close only if not succeeded
-    
     return 0;
 }
 
@@ -295,6 +302,9 @@ void IsoCan11Adapter::processFlowFrame(const CanMsgBuffer* msg)
     CanMsgBuffer ctrlData(getID(), false, 8, 0x30, 0x0, 0x00);
     ctrlData.id |= (msg->id & 0x07);
     driver_->send(&ctrlData);
+    
+    // Message log
+    history_->add2Buffer(&ctrlData, true, 0);
 }
 
 void IsoCan11Adapter::getDescription()
@@ -372,6 +382,9 @@ void IsoCan29Adapter::processFlowFrame(const CanMsgBuffer* msg)
     CanMsgBuffer ctrlData(getID(), true, 8, 0x30, 0x0, 0x00);
     ctrlData.id |= (msg->id & 0xFF) << 8;
     driver_->send(&ctrlData);
+    
+    // Message log
+    history_->add2Buffer(&ctrlData, true, 0);
 }
 
 void IsoCan29Adapter::getDescription()

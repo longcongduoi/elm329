@@ -146,13 +146,15 @@ bool CanDriver::send(const CanMsgBuffer* buff)
 }
 
 /**
- * Function Name: setFilter()
- * Description:   Set the CAN filter for FIFO buffer
- * Returns:       None
+ * Set the CAN filter for FIFO buffer
+ * @parameter   filter    CAN filter value
+ * @parameter   mask      CAN mask value
+ * @parameter   extended  CAN extended message flag
+ * @return  the operation completion status
  */
-const uint32_t filterNum = 0;
-static void setFilter(uint32_t val, bool extended)
+bool CanDriver::setFilterAndMask(uint32_t filter, uint32_t mask, bool extended)
 {
+    const uint32_t filterNum = 0;
     const uint32_t filterNumberBitPos = 1 << filterNum;
     
     // Initialisation mode for the filter
@@ -166,36 +168,14 @@ static void setFilter(uint32_t val, bool extended)
 
     // 32-bit identifier 
     // STDID[10:0], EXTID[17:0], IDE and RTR bits.
-    CAN->sFilterRegister[filterNum].FR1 = extended ? ((val << 3) | 0x0000004) : (val << 21);
+    CAN->sFilterRegister[filterNum].FR1 = extended ? ((filter << 3) | 0x0000004) : (filter << 21);
 
     // FIFO 0 assignation for the filter
-    CAN->FFA1R &= ~(uint32_t)filterNumberBitPos;
-
-    // Filter activation
-    CAN->FA1R |= filterNumberBitPos;
-
-    // Leave the initialisation mode for the filter
-    CAN->FMR &= ~FMR_FINIT;
-}
-
-/**
- * Function Name: setMask()
- * Description:   Set the CAN mask for FIFO buffer
- * Returns:       None
- */
-static void setMask(uint32_t val, bool extended)
-{
-    const uint32_t filterNumberBitPos = 1 << filterNum;
+    CAN->FFA1R &= ~filterNumberBitPos;
     
-    // Initialisation mode for the filter
-    CAN->FMR |= FMR_FINIT;
-
-    // Filter Deactivation
-    CAN->FA1R &= ~filterNumberBitPos;
-
     // 32-bit mask
     // STDID[10:0], EXTID[17:0], IDE and RTR bits.
-    CAN->sFilterRegister[filterNum].FR2 = extended ? ((val << 3) | 0x0000004) : (val << 21);
+    CAN->sFilterRegister[filterNum].FR2 = extended ? ((mask << 3) | 0x0000004) : (mask << 21);
 
     // Id/Mask mode for the filter
     CAN->FM1R &= ~filterNumberBitPos;
@@ -205,19 +185,7 @@ static void setMask(uint32_t val, bool extended)
 
     // Leave the initialisation mode for the filter
     CAN->FMR &= ~FMR_FINIT;
-}
-
-/**
- * Set the CAN filter for FIFO buffer
- * @parameter   filter    CAN filter value
- * @parameter   mask      CAN mask value
- * @parameter   extended  CAN extended message flag
- * @return  the operation completion status
- */
-bool CanDriver::setFilterAndMask(uint32_t filter, uint32_t mask, bool extended)
-{
-    setFilter(filter, extended);
-    setMask(mask, extended);
+    
     return true;
 }
 

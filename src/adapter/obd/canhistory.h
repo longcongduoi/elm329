@@ -12,14 +12,18 @@
 
 using namespace util;
 
-typedef struct {
+struct MsgEntry {
+	MsgEntry() : id(0), dir(false), ext(false), dlc(0), mid(0)
+	{
+		memset(data, 0, sizeof(data));
+	}
     uint32_t id;
     bool dir;
     bool ext;
     uint8_t dlc;
     uint8_t mid;
     uint8_t data[8];
-} MsgEntry;
+};
 
 struct CanMsgBuffer;
 
